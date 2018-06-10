@@ -1,5 +1,8 @@
 #  GPwith Team
 
+## Environment Setting
+pip list : opencv, numpy, matplotlib, tensorflow, math, collections, functools, PIL, six, standard_fields, logging, google
+
 ##  Inference_Graph
 사이트 주소 : https://drive.google.com/open?id=1saBQ9z_OyiA-YQhqq1NFnKoLIK2GMwRY
 
@@ -9,5 +12,4 @@
 ### 현재 진행 상황
 
 1. Object Detection
-2. Lane Detection 진행중
-3.
+2. Lane Detection ( ~ ing )
