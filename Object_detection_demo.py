@@ -1,16 +1,18 @@
 import os
 import cv2
 import numpy as np
+import matplotlib.image as mpimg
 import tensorflow as tf
 import sys
 from lane_detection import Lane
+from Lane_Detection_V2 import LaneDetection
 # 필요한 유틸리티 임포트
 import label_map_util
 import visualization_utils as vis_util
 
 # 모델 이름과 이미지 이름
 MODEL_NAME = 'inference_graph'
-IMAGE_NAME = '000000.jpg'
+IMAGE_NAME = '000138.png'
 
 # 현재 경로 가져오기
 CWD_PATH = os.getcwd()
@@ -58,6 +60,7 @@ num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
 # 이미지로 진행 할 때
 lane = Lane()
+laneV2 = LaneDetection()
 image = cv2.imread(PATH_TO_IMAGE)
 
 
@@ -80,11 +83,13 @@ vis_util.visualize_boxes_and_labels_on_image_array(
     line_thickness=8,
     min_score_thresh=0.80)
 
+# Version1 Lane Detection
+# image = lane.process_frame(image)
 
-image = lane.process_frame(image)
+# Version2 Lane Detection
 
-cv2.imwrite('output.jpg',image)
-
+image = laneV2.pipeline(image)
+cv2.imwrite('output_000138.jpg',image)
 cv2.destroyAllWindows()
 
 '''
