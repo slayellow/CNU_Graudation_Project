@@ -1,11 +1,7 @@
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import numpy as np
 import cv2
 import math
-import os
-from moviepy.editor import VideoFileClip
-import numpy.core.numeric as NX
+
 
 class LaneDetection(object):
     def __init__(self):
@@ -39,10 +35,6 @@ class LaneDetection(object):
 
 
     def pipeline(self, image):
-        """
-        An image processing pipeline which will output
-        an image with the lane lines annotated.
-        """
         height = image.shape[0]
         width = image.shape[1]
         region_of_interest_vertices = [
@@ -52,7 +44,6 @@ class LaneDetection(object):
         ]
         gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         cannyed_image = cv2.Canny(gray_image, 100, 200)
-     #   mpimg.imsave("temp/KITTI/annotated_cannyed_" + source_img, cannyed_image)
         cropped_image = self.region_of_interest(
             cannyed_image,
             np.array(
@@ -60,7 +51,6 @@ class LaneDetection(object):
                 np.int32
             ),
         )
-    #    mpimg.imsave("temp/KITTI/annotated_cropped_" + source_img, cropped_image)
         lines = cv2.HoughLinesP(
             cropped_image,
             rho=6,
@@ -89,9 +79,6 @@ class LaneDetection(object):
                         right_line_y.extend([y1, y2])
             min_y = int(image.shape[0] * (3 / 5))
             max_y = int(image.shape[0])
-            tmp=NX.asarray(left_line_y) + 0.0
-            print(tmp.size)
-
             poly_left = np.poly1d(np.polyfit(
                 left_line_y,
                 left_line_x,
@@ -117,24 +104,4 @@ class LaneDetection(object):
             )
         except TypeError:
             return image
-
         return line_image
-# Image
-'''
-image = mpimg.imread('1.jpg')
-image=pipeline(image)
-mpimg.imsave("output.jpg",image)
-for source_img in os.listdir("temp/KITTI/"):
-    image = mpimg.imread("temp/KITTI/"+source_img)
-    print(source_img)
-    processed = pipeline(image)
-    mpimg.imsave("temp/KITTI/annotated_"+source_img,processed)
-'''
-# 동영상
-'''
-white_output = './output/output.mp4'
-clip1 = VideoFileClip("./output/000006.mp4")
-white_clip = clip1.fl_image(pipeline)
-
-white_clip.write_videofile(white_output, audio=False)
-'''
