@@ -34,7 +34,7 @@ class LaneDetection(object):
         return img
 
 
-    def pipeline(self, image):
+    def pipeline(self, image, temp_line):
         return_lines = []
         height = image.shape[0]
         width = image.shape[1]
@@ -45,14 +45,14 @@ class LaneDetection(object):
             (width, height*7/8),
         ]
         # RoI 사각형
-        #'''
+        '''
         region_of_interest_vertices = [
             (0, height*7/8),
             (width/2 - width/8, height/2 + height/8),
             (width/2 + width/8, height/2 + height/8),
             (width, height*7/8)
         ]
-        #'''
+        '''
         gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         cannyed_image = cv2.Canny(gray_image, 100, 200)
         cropped_image = self.region_of_interest(
@@ -115,5 +115,11 @@ class LaneDetection(object):
                 thickness=5,
             )
         except TypeError:
-            return image, return_lines
+            line_image = self.draw_lines(
+                image,
+                [temp_line],
+                thickness=5,
+            )
+            return line_image, return_lines
         return line_image, return_lines
+

@@ -52,8 +52,10 @@ class ObjectDetection(object):
         self.num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
     def image_detection(self, lane, output_name):
+        temp_line = []
         start_time = time.time()
         image = cv2.imread(self.PATH_TO_OBJECT)
+        image, lines = lane.pipeline(image, temp_line)
         image_expanded = np.expand_dims(image, axis=0)
         (boxes, scores, classes, num) = self.sess.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
@@ -67,9 +69,8 @@ class ObjectDetection(object):
             use_normalized_coordinates=True,
             line_thickness=8,
             min_score_thresh=0.80)
-        image, lines = lane.pipeline(image)
-        print(bounding_box)
-        print(lines)
+        print(bounding_box)         # bounding_box 개수만큼 좌표값 출력
+        print(lines)                # 2개의 좌표값 출력 ( 영상과는 다르게 라인을 못따면 이미지에선 안보임)
         if lines != []:
             image = self.cal.calculate_region(image, bounding_box, lines)
         cv2.imwrite(output_name+'.jpg',image)
@@ -77,24 +78,29 @@ class ObjectDetection(object):
         print('------소요시간 : %s seconds ------'%(time.time() - start_time))
 
     def video_detection(self, lane, output_name):
+        temp_line = []
         start_time = time.time()
         cap = cv2.VideoCapture(self.PATH_TO_OBJECT)
         ret, frame = cap.read()
         height, width, _ = frame.shape
-        print(height, width)
 
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        output = cv2.VideoWriter(output_name+'.avi', fourcc, 25.0, (width, height) )
+        output = cv2.VideoWriter(output_name+'.avi', fourcc, 29.97, (width, height) )
 
-
+        cnt = 0
         while(1):
             ret, frame = cap.read()
             if ret == True:
+                frame, lines = lane.pipeline(frame, temp_line)
+                if lines == []:
+                    lines = temp_line
+                else:
+                    temp_line = lines
                 image_expanded = np.expand_dims(frame, axis=0)
                 (boxes, scores, classes, num) = self.sess.run(
                     [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
                     feed_dict={self.image_tensor: image_expanded})
-                vis_util.visualize_boxes_and_labels_on_image_array(
+                _, bounding_box = vis_util.visualize_boxes_and_labels_on_image_array(
                     frame,
                     np.squeeze(boxes),
                     np.squeeze(classes).astype(np.int32),
@@ -103,7 +109,12 @@ class ObjectDetection(object):
                     use_normalized_coordinates=True,
                     line_thickness=8,
                     min_score_thresh=0.80)
-                frame, lines = lane.pipeline(frame)
+
+                print('Frame ' + str(cnt+1) + ' Line : ' + str(lines))
+
+                if lines != []:
+                    frame = self.cal.calculate_region(frame, bounding_box, lines)
+                cnt += 1
                 output.write(frame)
                 k = cv2.waitKey(40) & 0xff
                 if k == 27:
