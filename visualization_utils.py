@@ -11,7 +11,7 @@ import six
 import tensorflow as tf
 import standard_fields as fields
 
-
+bounding_box = []
 _TITLE_LEFT_MARGIN = 10
 _TITLE_TOP_MARGIN = 10
 STANDARD_COLORS = [
@@ -73,6 +73,7 @@ def draw_bounding_box_on_image(image, ymin, xmin, ymax, xmax, color='red', thick
                                   ymin * im_height, ymax * im_height)
   else:
     (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
+  bounding_box.append([left, right, top, bottom])
   draw.line([(left, top), (left, bottom), (right, bottom),
              (right, top), (left, top)], width=thickness, fill=color)
   try:
@@ -91,6 +92,7 @@ def draw_bounding_box_on_image(image, ymin, xmin, ymax, xmax, color='red', thick
     draw.rectangle([(left, text_bottom - text_height - 2 * margin), (left + text_width,text_bottom)], fill=color)
     draw.text((left + margin, text_bottom - text_height - margin), display_str, fill='black', font=font)
     text_bottom -= text_height - 2 * margin
+
 
 
 def draw_bounding_boxes_on_image_array(image, boxes, color='red', thickness=4, display_str_list_list=()):
@@ -266,6 +268,7 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
                                               min_score_thresh=.5, agnostic_mode=False, line_thickness=4,
                                               groundtruth_box_visualization_color='black',
                                               skip_scores=False, skip_labels=False):
+
   box_to_display_str_map = collections.defaultdict(list)
   box_to_color_map = collections.defaultdict(str)
   box_to_instance_masks_map = {}
@@ -304,6 +307,7 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
         else:
           box_to_color_map[box] = STANDARD_COLORS[
               classes[i] % len(STANDARD_COLORS)]
+
   for box, color in box_to_color_map.items():
     ymin, xmin, ymax, xmax = box
     if instance_masks is not None:
@@ -337,7 +341,7 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
           radius=line_thickness / 2,
           use_normalized_coordinates=use_normalized_coordinates)
 
-  return image
+  return image, bounding_box
 
 
 def add_cdf_image_summary(values, name):
