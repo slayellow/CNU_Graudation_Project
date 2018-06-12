@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 import label_map_util
 import visualization_utils as vis_util
+from calculate_region import CalculateRegion
 import time
 
 
@@ -25,6 +26,7 @@ class ObjectDetection(object):
         self.PATH_TO_OBJECT = object_path
         self.NUM_CLASSES = 8
         self.load_setting()
+        self.cal = CalculateRegion()
 
     def load_setting(self):
         '''
@@ -40,7 +42,9 @@ class ObjectDetection(object):
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
-            self.sess = tf.Session(graph=detection_graph)
+            config = tf.ConfigProto()
+            config.gpu_options.per_process_gpu_memory_fraction = 0.8
+            self.sess = tf.Session(config=config, graph=detection_graph)
         self.image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
         self.detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
         self.detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
@@ -54,7 +58,7 @@ class ObjectDetection(object):
         (boxes, scores, classes, num) = self.sess.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_expanded})
-        vis_util.visualize_boxes_and_labels_on_image_array(
+        _, bounding_box = vis_util.visualize_boxes_and_labels_on_image_array(
             image,
             np.squeeze(boxes),
             np.squeeze(classes).astype(np.int32),
@@ -63,7 +67,11 @@ class ObjectDetection(object):
             use_normalized_coordinates=True,
             line_thickness=8,
             min_score_thresh=0.80)
-        image = lane.pipeline(image)
+        image, lines = lane.pipeline(image)
+        print(bounding_box)
+        print(lines)
+        if lines != []:
+            image = self.cal.calculate_region(image, bounding_box, lines)
         cv2.imwrite(output_name+'.jpg',image)
         cv2.destroyAllWindows()
         print('------소요시간 : %s seconds ------'%(time.time() - start_time))
@@ -71,10 +79,14 @@ class ObjectDetection(object):
     def video_detection(self, lane, output_name):
         start_time = time.time()
         cap = cv2.VideoCapture(self.PATH_TO_OBJECT)
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        output = cv2.VideoWriter(output_name+'.mp4', fourcc, 25.0, (1280,720) )
-        #
         ret, frame = cap.read()
+        height, width, _ = frame.shape
+        print(height, width)
+
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        output = cv2.VideoWriter(output_name+'.avi', fourcc, 25.0, (width, height) )
+
+
         while(1):
             ret, frame = cap.read()
             if ret == True:
@@ -91,7 +103,7 @@ class ObjectDetection(object):
                     use_normalized_coordinates=True,
                     line_thickness=8,
                     min_score_thresh=0.80)
-                frame = lane.pipeline(frame)
+                frame, lines = lane.pipeline(frame)
                 output.write(frame)
                 k = cv2.waitKey(40) & 0xff
                 if k == 27:
