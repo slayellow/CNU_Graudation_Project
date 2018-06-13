@@ -40,6 +40,8 @@ STANDARD_COLORS = [
     'WhiteSmoke', 'Yellow', 'YellowGreen'
 ]
 
+def reset():
+    del bounding_box[:]
 
 def save_image_array_as_png(image, output_path):
   image_pil = Image.fromarray(np.uint8(image)).convert('RGB')

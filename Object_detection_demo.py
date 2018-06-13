@@ -72,7 +72,7 @@ class ObjectDetection(object):
         print(bounding_box)         # bounding_box 개수만큼 좌표값 출력
         print(lines)                # 2개의 좌표값 출력 ( 영상과는 다르게 라인을 못따면 이미지에선 안보임)
         if lines != []:
-            image = self.cal.calculate_region(image, bounding_box, lines)
+            image = self.cal.calculate_region_image(image, bounding_box, lines)
         cv2.imwrite(output_name+'.jpg',image)
         cv2.destroyAllWindows()
         print('------소요시간 : %s seconds ------'%(time.time() - start_time))
@@ -89,6 +89,7 @@ class ObjectDetection(object):
 
         cnt = 0
         while(1):
+
             ret, frame = cap.read()
             if ret == True:
                 frame, lines = lane.pipeline(frame, temp_line)
@@ -113,9 +114,10 @@ class ObjectDetection(object):
                 print('Frame ' + str(cnt+1) + ' Line : ' + str(lines))
 
                 if lines != []:
-                    frame = self.cal.calculate_region(frame, bounding_box, lines)
+                    frame = self.cal.calculate_region_video(frame, bounding_box, lines)
                 cnt += 1
                 output.write(frame)
+                vis_util.reset()
                 k = cv2.waitKey(40) & 0xff
                 if k == 27:
                     break
