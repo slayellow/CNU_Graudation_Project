@@ -113,26 +113,13 @@ class CalculateRegion(object):
                 print("중첩 비율 : " + str(percentage))
                 if percentage >= 20 and percentage < 60:
                     image = self.change_image(image)
+                    str = '---------------Warning------------------'
                     break
-                '''
-                # WARNING 조건문
-                if percentage >= 20 and percentage < 60:
-                    self.cnt += 1
                 else:
-                    if self.cnt >= 15:
-                        self.cnt = 0
-                        self.Warning = True
-                        image = self.change_video(image)
-                        break
-                    else:
-                        self.cnt = 0
-                if self.Warning == True:
-                    image = self.change_video(image)
-              
-              .'''
+                    str = '--------------- No Warning -------------'
             else:
                 continue
-        return image
+        return str, image
 
     def calculate_boundingbox(self , all, bounding_box):
         left, right, top, bottom = bounding_box
@@ -342,6 +329,5 @@ class CalculateRegion(object):
         return area
 
     def change_image(self, image):
-        print('---------------Warning------------------')
         image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
         return image
