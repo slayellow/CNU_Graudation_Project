@@ -97,6 +97,7 @@ class ObjectDetection(object):
                     lines = temp_line
                 else:
                     temp_line = lines
+                '''
                 image_expanded = np.expand_dims(frame, axis=0)
                 (boxes, scores, classes, num) = self.sess.run(
                     [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
@@ -115,6 +116,7 @@ class ObjectDetection(object):
 
                 if lines != []:
                     frame = self.cal.calculate_region_video(frame, bounding_box, lines)
+            '''
                 cnt += 1
                 output.write(frame)
                 vis_util.reset()
