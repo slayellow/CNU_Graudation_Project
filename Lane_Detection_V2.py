@@ -15,7 +15,7 @@ class LaneDetection(object):
         return masked_image
 
 
-    def draw_lines(self, img, lines, color=[0, 0, 255], thickness=3):
+    def draw_lines(self, img, lines, color=[0, 0, 255], thickness=2):
         line_img = np.zeros(
             (
                 img.shape[0],
@@ -39,6 +39,7 @@ class LaneDetection(object):
         height = image.shape[0]
         width = image.shape[1]
         # RoI 삼각형
+        '''
         region_of_interest_vertices = [
             (0, height*7/8),
             (width / 2, height / 2),
@@ -52,7 +53,7 @@ class LaneDetection(object):
             (width/2 + width/8, height/2 + height/8),
             (width, height*7/8)
         ]
-        '''
+
         gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         cannyed_image = cv2.Canny(gray_image, 100, 200)
         cropped_image = self.region_of_interest(
@@ -62,6 +63,21 @@ class LaneDetection(object):
                 np.int32
             ),
         )
+
+
+        # 이쪽을 손보면 될것 같다. 07/15
+        lines = cv2.HoughLinesP(
+            cropped_image,
+            rho=6,
+            theta=np.pi / 60,
+            threshold=100,          # 값이 작아지면 선을 잘 찾아진다
+            lines=np.array([]),
+            minLineLength = 60,
+            maxLineGap = 30
+        )
+
+        # Original
+        '''
         lines = cv2.HoughLinesP(
             cropped_image,
             rho=6,
@@ -71,14 +87,18 @@ class LaneDetection(object):
             minLineLength=40,
             maxLineGap=25
         )
+        '''
 
         left_line_x = []
         left_line_y = []
         right_line_x = []
         right_line_y = []
         try:
+
             for line in lines:
                 for x1, y1, x2, y2 in line:
+                    if x1 is x2:
+                        continue
                     slope = (y2 - y1) / (x2 - x1)
                     if math.fabs(slope) < 0.5:
                         continue
@@ -88,7 +108,7 @@ class LaneDetection(object):
                     else:
                         right_line_x.extend([x1, x2])
                         right_line_y.extend([y1, y2])
-            min_y = int(image.shape[0] * (3 / 5))
+            min_y = int(image.shape[0] * (0.725))
             max_y = int(image.shape[0])
             poly_left = np.poly1d(np.polyfit(
                 left_line_y,
@@ -122,4 +142,5 @@ class LaneDetection(object):
             )
             return line_image, return_lines
         return line_image, return_lines
+
 
