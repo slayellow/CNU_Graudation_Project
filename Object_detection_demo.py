@@ -85,7 +85,7 @@ class ObjectDetection(object):
         height, width, _ = frame.shape
 
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        output = cv2.VideoWriter(output_name+'.avi', fourcc, 29.97, (width, height) )
+        output = cv2.VideoWriter(output_name+'.mp4', fourcc, 30, (width, height) )
 
         cnt = 0
         while(1):
