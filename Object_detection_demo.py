@@ -18,9 +18,10 @@ class ObjectDetection(object):
             PATH_TO_LABELS : 라벨 맵 경로
             PATH_TO_OBJECT : 이미지/비디오 경로
             NUM_CLASSES : 클래스 개수
-        :param object_path: path of image or video
+            generate variable and object / run load_setting function
+        :param object_path: path of video
         '''
-        self.MODEL_NAME = 'inference_graph'
+        self.MODEL_NAME = 'inference_graph_160'
         self.PATH_TO_CKPT = os.path.join('./',self.MODEL_NAME,'frozen_inference_graph.pb')
         self.PATH_TO_LABELS = os.path.join('./','training','label_map.pbtxt')
         self.PATH_TO_OBJECT = object_path
@@ -43,7 +44,7 @@ class ObjectDetection(object):
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
             config = tf.ConfigProto()
-            config.gpu_options.per_process_gpu_memory_fraction = 0.8
+            config.gpu_options.per_process_gpu_memory_fraction = 0.8        # GPU 할당량
             self.sess = tf.Session(config=config, graph=detection_graph)
         self.image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
         self.detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
@@ -51,53 +52,37 @@ class ObjectDetection(object):
         self.detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
         self.num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
-    def image_detection(self, lane, output_name):
-        temp_line = []
-        start_time = time.time()
-        image = cv2.imread(self.PATH_TO_OBJECT)
-        image, lines = lane.pipeline(image, temp_line)
-        image_expanded = np.expand_dims(image, axis=0)
-        (boxes, scores, classes, num) = self.sess.run(
-            [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
-            feed_dict={self.image_tensor: image_expanded})
-        _, bounding_box = vis_util.visualize_boxes_and_labels_on_image_array(
-            image,
-            np.squeeze(boxes),
-            np.squeeze(classes).astype(np.int32),
-            np.squeeze(scores),
-            self.category_index,
-            use_normalized_coordinates=True,
-            line_thickness=8,
-            min_score_thresh=0.80)
-        print(bounding_box)         # bounding_box 개수만큼 좌표값 출력
-        print(lines)                # 2개의 좌표값 출력 ( 영상과는 다르게 라인을 못따면 이미지에선 안보임)
-        if lines != []:
-            image = self.cal.calculate_region_image(image, bounding_box, lines)
-        cv2.imwrite(output_name+'.jpg',image)
-        cv2.destroyAllWindows()
-        print('------소요시간 : %s seconds ------'%(time.time() - start_time))
-
-    def video_detection(self, lane, output_name):
-        temp_line = []
-        start_time = time.time()
+    def video_detection(self, lane, output_path, log):
+        """
+        run object detection
+        :param lane: LaneDetection object
+        :param input_path: Input path
+        :param output_path: Output path
+        :param log: logger object
+        """
+        temp_line = []      # 이전 라인 좌표 저장을 위한 리스트
+        start_time = time.time()    # 시작 시간
+        # 비디오 가져오기
         cap = cv2.VideoCapture(self.PATH_TO_OBJECT)
         ret, frame = cap.read()
         height, width, _ = frame.shape
-
+        # 결과 비디오 생성
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        output = cv2.VideoWriter(output_name+'.mp4', fourcc, 30, (width, height) )
+        output = cv2.VideoWriter(output_path, fourcc, 29.97, (width, height) )
 
-        cnt = 0
-        while(1):
+        cnt = 0         # Frame 체크용
+        check = False   # 위험상황 감지 확인용
 
+        while True:
             ret, frame = cap.read()
-            if ret == True:
-                frame, lines = lane.pipeline(frame, temp_line)
-                if lines == []:
+            if ret is True:
+                lines = lane.pipeline(frame, temp_line, log)     # 라인 인식하기
+                if not lines:
                     lines = temp_line
                 else:
                     temp_line = lines
-                '''
+
+                # 물체 인식 하기
                 image_expanded = np.expand_dims(frame, axis=0)
                 (boxes, scores, classes, num) = self.sess.run(
                     [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
@@ -111,14 +96,15 @@ class ObjectDetection(object):
                     use_normalized_coordinates=True,
                     line_thickness=8,
                     min_score_thresh=0.80)
+                frame = lane.draw_lines(frame, [lines], thickness=5, )      # 라인 그리기
 
-                print('Frame ' + str(cnt+1) + ' Line : ' + str(lines))
-
-                if lines != []:
-                    frame = self.cal.calculate_region_video(frame, bounding_box, lines)
-            '''
+                if lines:
+                    frame, check = self.cal.calculate_region_video(frame, bounding_box, lines)
+                    # frame : 위험상황 감지후 나오는 이미지 / check : 위험상황 감지하면 True, 아니면 False
                 cnt += 1
                 output.write(frame)
+                if check:
+                    log.logger.info('Frame %s : --------------------------- Warning!!!------------------------- ' % (str(cnt)))
                 vis_util.reset()
                 k = cv2.waitKey(40) & 0xff
                 if k == 27:
@@ -128,4 +114,4 @@ class ObjectDetection(object):
         cv2.destroyAllWindows()
         output.release()
         cap.release()
-        print('------ 소요시간 : %s seconds ------' % (time.time() - start_time))
+        log.logger.info('------------- 소요시간 : %s seconds --------------' % (str(time.time() - start_time)))

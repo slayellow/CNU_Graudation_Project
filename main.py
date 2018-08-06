@@ -1,9 +1,10 @@
 from run import Run
+from logger import Logger
 
 def main():
+    log = Logger()
     start = Run()
-    object, path = start.load_path()
-    start.run_model(object ,path)
+    start.run_model(log)
 
 if __name__ == '__main__':
     main()
